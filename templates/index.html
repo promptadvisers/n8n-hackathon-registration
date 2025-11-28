@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>n8n Text-to-Workflow Hackathon Registration</title>
+    <style>
+        :root {
+            --primary: #EA4B71;
+            --primary-hover: #d13d61;
+            --text-dark: #1a1a1a;
+            --text-muted: #666;
+            --bg-white: #ffffff;
+            --bg-light: #f8f9fa;
+            --border: #e0e0e0;
+            --success: #28a745;
+            --error: #dc3545;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            padding: 50px 20px 40px;
+            background: var(--bg-white);
+            border-bottom: 4px solid var(--primary);
+        }
+
+        h1 {
+            color: var(--primary);
+            font-size: 2.2rem;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .subheader {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .container {
+            max-width: 580px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .form-card {
+            background: var(--bg-white);
+            border-radius: 16px;
+            padding: 35px;
+            margin: 30px 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+        }
+
+        .required::after {
+            content: ' *';
+            color: var(--primary);
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: var(--bg-white);
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(234, 75, 113, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: var(--bg-light);
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            transition: border-color 0.2s;
+        }
+
+        .checkbox-group:has(input:checked) {
+            border-color: var(--primary);
+            background: rgba(234, 75, 113, 0.05);
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            accent-color: var(--primary);
+            margin-top: 2px;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            color: var(--error);
+            font-size: 0.875rem;
+            margin-top: 6px;
+            display: none;
+        }
+
+        .field-error input,
+        .field-error select,
+        .field-error textarea {
+            border-color: var(--error);
+        }
+
+        .field-error .checkbox-group {
+            border-color: var(--error);
+        }
+
+        .field-error .error-message {
+            display: block;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px 20px 40px;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Success Overlay */
+        .success-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .success-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .success-card {
+            background: white;
+            padding: 50px 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 420px;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .success-overlay.show .success-card {
+            transform: scale(1);
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--success);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+        }
+
+        .success-icon svg {
+            width: 40px;
+            height: 40px;
+            stroke: white;
+            stroke-width: 3;
+        }
+
+        .success-card h2 {
+            color: var(--text-dark);
+            font-size: 1.75rem;
+            margin-bottom: 16px;
+        }
+
+        .success-card p {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            line-height: 1.6;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 640px) {
+            header {
+                padding: 35px 15px 30px;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            .subheader {
+                font-size: 1.05rem;
+            }
+
+            .form-card {
+                padding: 25px 20px;
+                margin: 20px 10px;
+                border-radius: 12px;
+            }
+
+            .btn-primary {
+                padding: 14px;
+            }
+        }
+
+        /* Small helper text */
+        .help-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>n8n Text-to-Workflow Hackathon</h1>
+        <p class="subheader">$5,000 in Prizes | December 5-22, 2025</p>
+    </header>
+
+    <div class="container">
+        <form id="registrationForm" class="form-card" novalidate>
+            <!-- 1. Full Name -->
+            <div class="form-group">
+                <label for="fullName" class="required">Full Name</label>
+                <input type="text" id="fullName" name="full_name" autocomplete="name">
+                <span class="error-message">Please enter your full name</span>
+            </div>
+
+            <!-- 2. Email -->
+            <div class="form-group">
+                <label for="email" class="required">Email Address</label>
+                <input type="email" id="email" name="email" autocomplete="email">
+                <span class="error-message">Please enter a valid email address</span>
+            </div>
+
+            <!-- 3. Phone Number -->
+            <div class="form-group">
+                <label for="phone">Phone Number (optional)</label>
+                <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="+1 (555) 123-4567">
+            </div>
+
+            <!-- 4. Participation Type -->
+            <div class="form-group">
+                <label for="participationType" class="required">Participation Type</label>
+                <select id="participationType" name="participation_type">
+                    <option value="">Select an option...</option>
+                    <option value="solo">Solo</option>
+                    <option value="team">Team</option>
+                </select>
+                <span class="error-message">Please select a participation type</span>
+            </div>
+
+            <!-- 5. Team Members (conditional) -->
+            <div class="form-group hidden" id="teamMembersGroup">
+                <label for="teamMembers" class="required">Team Member Names/Emails</label>
+                <textarea id="teamMembers" name="team_members" placeholder="Enter team member names or emails, comma separated"></textarea>
+                <span class="help-text">List your team members (comma separated)</span>
+                <span class="error-message">Please list your team members</span>
+            </div>
+
+            <!-- 6. Skill Level -->
+            <div class="form-group">
+                <label for="skillLevel" class="required">Skill Level</label>
+                <select id="skillLevel" name="skill_level">
+                    <option value="">Select your level...</option>
+                    <option value="beginner">Beginner (new to n8n)</option>
+                    <option value="intermediate">Intermediate (built a few workflows)</option>
+                    <option value="advanced">Advanced (use n8n regularly)</option>
+                </select>
+                <span class="error-message">Please select your skill level</span>
+            </div>
+
+            <!-- 7. Project Idea -->
+            <div class="form-group">
+                <label for="projectIdea" class="required">What do you want to build?</label>
+                <textarea id="projectIdea" name="project_idea" placeholder="Briefly describe your hackathon project idea..."></textarea>
+                <span class="error-message">Please describe your project idea</span>
+            </div>
+
+            <!-- 8. Free License Raffle -->
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="wantsFreeLicense" name="wants_free_license">
+                    <label for="wantsFreeLicense">I want to be entered to win a free n8n license to use for the hackathon</label>
+                </div>
+            </div>
+
+            <!-- 9. Availability Confirmation -->
+            <div class="form-group" id="availabilityGroup">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="availabilityConfirmed" name="availability_confirmed">
+                    <label for="availabilityConfirmed">I confirm I can participate during December 5-22, 2025 and will submit a project</label>
+                </div>
+                <span class="error-message">Please confirm your availability and commitment</span>
+            </div>
+
+            <!-- 10. Share Recordings -->
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="shareRecordings" name="share_recordings">
+                    <label for="shareRecordings">I'm willing to share my recordings with n8n</label>
+                </div>
+            </div>
+
+            <!-- 11. Social Handle (optional) -->
+            <div class="form-group">
+                <label for="socialHandle">LinkedIn or X Handle (optional)</label>
+                <input type="text" id="socialHandle" name="social_handle" placeholder="@username or profile URL">
+                <span class="help-text">For build-in-public tagging</span>
+            </div>
+
+            <button type="submit" class="btn-primary" id="submitBtn">Register for Hackathon</button>
+
+            <div id="formError" class="error-message" style="text-align: center; margin-top: 16px; font-size: 0.95rem;"></div>
+        </form>
+    </div>
+
+    <footer>
+        Hosted by Early AI-dopters Community
+    </footer>
+
+    <!-- Success Overlay -->
+    <div id="successOverlay" class="success-overlay">
+        <div class="success-card">
+            <div class="success-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+            <h2>You're in!</h2>
+            <p>You're registered for the hackathon. We'll be in touch with more details soon!</p>
+        </div>
+    </div>
+
+    <!-- Confetti library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('registrationForm');
+            const participationType = document.getElementById('participationType');
+            const teamMembersGroup = document.getElementById('teamMembersGroup');
+            const teamMembers = document.getElementById('teamMembers');
+            const submitBtn = document.getElementById('submitBtn');
+            const formError = document.getElementById('formError');
+            const successOverlay = document.getElementById('successOverlay');
+
+            // Required fields configuration
+            const requiredFields = ['fullName', 'email', 'participationType', 'skillLevel', 'projectIdea', 'availabilityConfirmed'];
+
+            // Toggle team members field visibility
+            participationType.addEventListener('change', function() {
+                if (this.value === 'team') {
+                    teamMembersGroup.classList.remove('hidden');
+                } else {
+                    teamMembersGroup.classList.add('hidden');
+                    teamMembers.value = '';
+                    // Clear any error state
+                    teamMembersGroup.classList.remove('field-error');
+                }
+            });
+
+            // Validation function
+            function validateField(fieldId) {
+                const field = document.getElementById(fieldId);
+                let group = field.closest('.form-group');
+                let isValid = true;
+                let errorMessage = '';
+
+                if (fieldId === 'fullName') {
+                    isValid = field.value.trim() !== '';
+                    errorMessage = 'Please enter your full name';
+                } else if (fieldId === 'email') {
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    isValid = emailRegex.test(field.value.trim());
+                    errorMessage = 'Please enter a valid email address';
+                } else if (fieldId === 'participationType') {
+                    isValid = field.value !== '';
+                    errorMessage = 'Please select a participation type';
+                } else if (fieldId === 'skillLevel') {
+                    isValid = field.value !== '';
+                    errorMessage = 'Please select your skill level';
+                } else if (fieldId === 'projectIdea') {
+                    isValid = field.value.trim() !== '';
+                    errorMessage = 'Please describe your project idea';
+                } else if (fieldId === 'availabilityConfirmed') {
+                    group = document.getElementById('availabilityGroup');
+                    isValid = field.checked;
+                    errorMessage = 'Please confirm your availability and commitment';
+                } else if (fieldId === 'teamMembers') {
+                    // Only validate if team is selected
+                    if (participationType.value === 'team') {
+                        isValid = field.value.trim() !== '';
+                        errorMessage = 'Please list your team members';
+                    }
+                }
+
+                if (!isValid) {
+                    group.classList.add('field-error');
+                    const errorSpan = group.querySelector('.error-message');
+                    if (errorSpan) errorSpan.textContent = errorMessage;
+                } else {
+                    group.classList.remove('field-error');
+                }
+
+                return isValid;
+            }
+
+            // Real-time validation on blur
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('blur', () => validateField(fieldId));
+                    if (field.type === 'checkbox') {
+                        field.addEventListener('change', () => validateField(fieldId));
+                    }
+                }
+            });
+
+            // Also validate team members on blur
+            teamMembers.addEventListener('blur', () => {
+                if (participationType.value === 'team') {
+                    validateField('teamMembers');
+                }
+            });
+
+            // Form submission
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                // Validate all required fields
+                let isFormValid = true;
+                requiredFields.forEach(fieldId => {
+                    if (!validateField(fieldId)) {
+                        isFormValid = false;
+                    }
+                });
+
+                // Validate team members if needed
+                if (participationType.value === 'team' && !validateField('teamMembers')) {
+                    isFormValid = false;
+                }
+
+                if (!isFormValid) {
+                    formError.textContent = 'Please fix the errors above';
+                    formError.style.display = 'block';
+                    // Scroll to first error
+                    const firstError = form.querySelector('.field-error');
+                    if (firstError) {
+                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    return;
+                }
+
+                // Collect form data
+                const formData = {
+                    full_name: document.getElementById('fullName').value.trim(),
+                    email: document.getElementById('email').value.trim(),
+                    phone: document.getElementById('phone').value.trim(),
+                    participation_type: participationType.value,
+                    team_members: teamMembers.value.trim(),
+                    skill_level: document.getElementById('skillLevel').value,
+                    project_idea: document.getElementById('projectIdea').value.trim(),
+                    wants_free_license: document.getElementById('wantsFreeLicense').checked,
+                    availability_confirmed: document.getElementById('availabilityConfirmed').checked,
+                    share_recordings: document.getElementById('shareRecordings').checked,
+                    social_handle: document.getElementById('socialHandle').value.trim()
+                };
+
+                // Disable submit button
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Registering...';
+                formError.style.display = 'none';
+
+                try {
+                    const response = await fetch('/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Show success overlay
+                        successOverlay.classList.add('show');
+
+                        // Fire confetti
+                        confetti({
+                            particleCount: 150,
+                            spread: 80,
+                            origin: { y: 0.6 },
+                            colors: ['#EA4B71', '#ffffff', '#ff8fa3', '#1a1a1a']
+                        });
+
+                        // Fire more confetti after a short delay
+                        setTimeout(() => {
+                            confetti({
+                                particleCount: 100,
+                                spread: 100,
+                                origin: { y: 0.5, x: 0.3 },
+                                colors: ['#EA4B71', '#ffffff', '#ff8fa3']
+                            });
+                            confetti({
+                                particleCount: 100,
+                                spread: 100,
+                                origin: { y: 0.5, x: 0.7 },
+                                colors: ['#EA4B71', '#ffffff', '#ff8fa3']
+                            });
+                        }, 300);
+                    } else {
+                        formError.textContent = result.errors.join('. ');
+                        formError.style.display = 'block';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Register for Hackathon';
+                    }
+                } catch (error) {
+                    formError.textContent = 'Network error. Please try again.';
+                    formError.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Register for Hackathon';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
