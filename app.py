@@ -1,6 +1,4 @@
 from flask import Flask, render_template, request, jsonify, Response
-import sqlite3
-from datetime import datetime
 import csv
 import io
 import re
@@ -8,43 +6,75 @@ import os
 
 app = Flask(__name__)
 
-# Use /tmp for Vercel (serverless), local path otherwise
-if os.environ.get('VERCEL'):
-    DATABASE = '/tmp/hackathon.db'
+# Database configuration
+USE_POSTGRES = os.environ.get('POSTGRES_URL') is not None
+
+if USE_POSTGRES:
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+
+    def get_db():
+        """Get PostgreSQL connection."""
+        conn = psycopg2.connect(os.environ['POSTGRES_URL'], cursor_factory=RealDictCursor)
+        return conn
+
+    def init_db():
+        """Create PostgreSQL table if not exists."""
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS registrations (
+                id SERIAL PRIMARY KEY,
+                full_name TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                phone TEXT,
+                participation_type TEXT NOT NULL,
+                team_members TEXT,
+                skill_level TEXT NOT NULL,
+                project_idea TEXT NOT NULL,
+                wants_free_license BOOLEAN NOT NULL,
+                availability_confirmed BOOLEAN NOT NULL,
+                share_recordings BOOLEAN NOT NULL,
+                social_handle TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        conn.close()
 else:
+    import sqlite3
+
     DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'hackathon.db')
 
+    def get_db():
+        """Get SQLite connection with row factory."""
+        conn = sqlite3.connect(DATABASE)
+        conn.row_factory = sqlite3.Row
+        return conn
 
-def get_db():
-    """Get database connection with row factory."""
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-def init_db():
-    """Create database table if not exists."""
-    conn = get_db()
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS registrations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            full_name TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            phone TEXT,
-            participation_type TEXT NOT NULL,
-            team_members TEXT,
-            skill_level TEXT NOT NULL,
-            project_idea TEXT NOT NULL,
-            wants_free_license INTEGER NOT NULL,
-            availability_confirmed INTEGER NOT NULL,
-            share_recordings INTEGER NOT NULL,
-            social_handle TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    conn.commit()
-    conn.close()
+    def init_db():
+        """Create SQLite table if not exists."""
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS registrations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                full_name TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                phone TEXT,
+                participation_type TEXT NOT NULL,
+                team_members TEXT,
+                skill_level TEXT NOT NULL,
+                project_idea TEXT NOT NULL,
+                wants_free_license INTEGER NOT NULL,
+                availability_confirmed INTEGER NOT NULL,
+                share_recordings INTEGER NOT NULL,
+                social_handle TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        conn.close()
 
 
 # Initialize database on startup
@@ -104,29 +134,56 @@ def register():
     try:
         conn = get_db()
         c = conn.cursor()
-        c.execute('''
-            INSERT INTO registrations
-            (full_name, email, phone, participation_type, team_members, skill_level,
-             project_idea, wants_free_license, availability_confirmed, share_recordings, social_handle)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            full_name,
-            email,
-            phone or None,
-            participation_type,
-            team_members or None,
-            skill_level,
-            project_idea,
-            1 if data.get('wants_free_license', False) else 0,
-            1,
-            1 if data.get('share_recordings', False) else 0,
-            data.get('social_handle', '').strip() or None
-        ))
+
+        wants_license = data.get('wants_free_license', False)
+        share_rec = data.get('share_recordings', False)
+
+        if USE_POSTGRES:
+            c.execute('''
+                INSERT INTO registrations
+                (full_name, email, phone, participation_type, team_members, skill_level,
+                 project_idea, wants_free_license, availability_confirmed, share_recordings, social_handle)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ''', (
+                full_name,
+                email,
+                phone or None,
+                participation_type,
+                team_members or None,
+                skill_level,
+                project_idea,
+                wants_license,
+                True,
+                share_rec,
+                data.get('social_handle', '').strip() or None
+            ))
+        else:
+            c.execute('''
+                INSERT INTO registrations
+                (full_name, email, phone, participation_type, team_members, skill_level,
+                 project_idea, wants_free_license, availability_confirmed, share_recordings, social_handle)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                full_name,
+                email,
+                phone or None,
+                participation_type,
+                team_members or None,
+                skill_level,
+                project_idea,
+                1 if wants_license else 0,
+                1,
+                1 if share_rec else 0,
+                data.get('social_handle', '').strip() or None
+            ))
+
         conn.commit()
         conn.close()
         return jsonify({'success': True, 'message': 'Registration successful!'})
-    except sqlite3.IntegrityError:
-        return jsonify({'success': False, 'errors': ['This email is already registered']}), 409
+    except Exception as e:
+        if 'unique' in str(e).lower() or 'duplicate' in str(e).lower():
+            return jsonify({'success': False, 'errors': ['This email is already registered']}), 409
+        raise e
 
 
 @app.route('/admin')
